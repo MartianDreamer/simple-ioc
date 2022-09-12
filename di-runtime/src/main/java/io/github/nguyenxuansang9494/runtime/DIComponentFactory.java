@@ -28,7 +28,7 @@ public class DIComponentFactory {
         }
         fields = clazz.getDeclaredFields();
         injectCount += Stream.of(fields).filter(f -> f.getAnnotation(Inject.class) != null).count();
-        List<Class<?>> classList = classMap.getOrDefault(injectCount, new LinkedList<>());
+        List<Class<?>> classList = classMap.getOrDefault((int)injectCount, new LinkedList<>());
         classList.add(clazz);
         classMap.putIfAbsent((int) injectCount, classList);
     }
