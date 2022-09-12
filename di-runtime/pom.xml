@@ -28,6 +28,11 @@
   </properties>
   <dependencies>
     <dependency>
+      <groupId>io.github.nguyenxuansang9494</groupId>
+      <artifactId>di-annotations</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.version}</version>
