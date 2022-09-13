@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class ClassHelper {
+public class ClassProcessor {
 
     public Field[] findDeclaredAnnotatedFields(Class<?> clazz, Class<? extends Annotation> annotation) {
         return Stream.of(clazz.getDeclaredFields()).filter(f -> f.getAnnotation(annotation)!=null).toArray(Field[]::new);

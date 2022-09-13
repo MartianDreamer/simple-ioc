@@ -12,12 +12,12 @@ import java.util.stream.Collectors;
 import io.github.nguyenxuansang9494.annotations.Component;
 import io.github.nguyenxuansang9494.annotations.Inject;
 
-public class DIComponentFactory {
-    private final ClassHelper classHelper;
+public class DIContextHelper {
+    private final ClassProcessor classHelper;
     private final DIContext context;
     private final Map<Integer, List<InstanceBuilder>> instanceBuilderMap;
 
-    public DIComponentFactory(ClassHelper classHelper, DIContext context, Map<Integer, List<InstanceBuilder>> instanceBuilderMap) {
+    public DIContextHelper(ClassProcessor classHelper, DIContext context, Map<Integer, List<InstanceBuilder>> instanceBuilderMap) {
         this.classHelper = classHelper;
         this.context = context;
         this.instanceBuilderMap = instanceBuilderMap;
