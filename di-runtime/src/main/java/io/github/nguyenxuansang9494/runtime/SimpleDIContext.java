@@ -15,8 +15,8 @@ public class SimpleDIContext implements DIContext {
         return CONTEXT;
     }
 
-    public List<Entry<Class<?>, List<Object>>> getChildrenClassComponent(Class<?> clazz) {
-        return pool.entrySet().stream().filter(e -> clazz.isAssignableFrom(e.getKey())).collect(Collectors.toList());
+    public List<Object> getChildrenClassComponent(Class<?> clazz) {
+        return pool.entrySet().stream().filter(e -> clazz.isAssignableFrom(e.getKey())).map(Entry::getValue).collect(Collectors.toList());
     }
 
     public List<Object> getComponents(Class<?> clazz) {

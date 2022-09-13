@@ -1,6 +1,6 @@
 package io.github.nguyenxuansang9494.runtime;
 
-import io.github.nguyenxuansang9494.runtime.exception.UnsupportedClass;
+import io.github.nguyenxuansang9494.runtime.exception.UnsupportedClassException;
 
 public final class SimpleDIApplication {
     private SimpleDIApplication() {
@@ -11,7 +11,7 @@ public final class SimpleDIApplication {
         try {
             clazz.getDeclaredMethod("main", String[].class);
         } catch (NoSuchMethodException | SecurityException e) {
-            throw new UnsupportedClass(e);
+            throw new UnsupportedClassException(e);
         }
     }
 }
