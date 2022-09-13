@@ -10,5 +10,5 @@ import java.lang.annotation.Target;
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Documented
 public @interface Component {
-    
+    ComponentScope scope = ComponentScope.SINGLETON;
 }

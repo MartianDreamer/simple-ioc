@@ -25,6 +25,7 @@ public class DIComponentFactory {
         while (superClass != null && superClass != Object.class) {
             fields = superClass.getDeclaredFields();
             injectCount += Stream.of(fields).filter(f -> f.getAnnotation(Inject.class) != null).count();
+            superClass = superClass.getSuperclass();
         }
         fields = clazz.getDeclaredFields();
         injectCount += Stream.of(fields).filter(f -> f.getAnnotation(Inject.class) != null).count();
@@ -35,5 +36,10 @@ public class DIComponentFactory {
 
     public void createComponents() {
         List<Entry<Integer,List<Class<?>>>> listClasses = classMap.entrySet().stream().sorted((e1, e2) -> e1.getKey() - e2.getKey()).collect(Collectors.toList());
+        for (Entry<Integer, List<Class<?>>> entry : listClasses) {
+            for (Class<?> clazz : entry.getValue()) {
+
+            }
+        }
     }
 }
