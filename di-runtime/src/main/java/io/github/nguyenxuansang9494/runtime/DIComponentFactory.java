@@ -1,45 +1,44 @@
 package io.github.nguyenxuansang9494.runtime;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
+import java.lang.reflect.Method;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import io.github.nguyenxuansang9494.annotations.Component;
 import io.github.nguyenxuansang9494.annotations.Inject;
 
 public class DIComponentFactory {
-    private final Map<Integer, List<Class<?>>> classMap;
+    private final ClassHelper classHelper;
+    private final DIContext context;
+    private final Map<Integer, List<InstanceBuilder>> instanceBuilderMap;
 
-    public DIComponentFactory() {
-        this.classMap = new HashMap<>();
+    public DIComponentFactory(ClassHelper classHelper, DIContext context, Map<Integer, List<InstanceBuilder>> instanceBuilderMap) {
+        this.classHelper = classHelper;
+        this.context = context;
+        this.instanceBuilderMap = instanceBuilderMap;
     }
 
-    public void add(Class<?> clazz) {
-        long injectCount = 0;
-        Class<?> superClass = clazz.getSuperclass();
-        Field[] fields;
-        while (superClass != null && superClass != Object.class) {
-            fields = superClass.getDeclaredFields();
-            injectCount += Stream.of(fields).filter(f -> f.getAnnotation(Inject.class) != null).count();
-            superClass = superClass.getSuperclass();
-        }
-        fields = clazz.getDeclaredFields();
-        injectCount += Stream.of(fields).filter(f -> f.getAnnotation(Inject.class) != null).count();
-        List<Class<?>> classList = classMap.getOrDefault((int)injectCount, new LinkedList<>());
-        classList.add(clazz);
-        classMap.putIfAbsent((int) injectCount, classList);
+    public void  add(Class<?> clazz) {
+        Field[] injectAnnotatedFields = classHelper.findAnnotatedFields(clazz, Inject.class);
+        Method[] componentAnnotatedDeclaredMethods = classHelper.findDeclaredAnnotatedMethods(clazz, Component.class);
+        InstanceBuilder instanceBuilder = new InstanceBuilder(context, clazz, injectAnnotatedFields, componentAnnotatedDeclaredMethods);
+        List<InstanceBuilder> instanceBuilderList = instanceBuilderMap.getOrDefault(injectAnnotatedFields.length, new LinkedList<>());
+        instanceBuilderList.add(instanceBuilder);
+        instanceBuilderMap.putIfAbsent(injectAnnotatedFields.length, instanceBuilderList);
     }
 
-    public void createComponents() {
-        List<Entry<Integer,List<Class<?>>>> listClasses = classMap.entrySet().stream().sorted((e1, e2) -> e1.getKey() - e2.getKey()).collect(Collectors.toList());
-        for (Entry<Integer, List<Class<?>>> entry : listClasses) {
-            for (Class<?> clazz : entry.getValue()) {
-
+    public void setupContext() {
+        List<Entry<Integer, List<InstanceBuilder>>> entries = instanceBuilderMap.entrySet().stream().sorted(Comparator.comparingInt(Entry::getKey)).collect(Collectors.toList());
+        for (Entry<Integer, List<InstanceBuilder>> entry : entries) {
+            for (InstanceBuilder builder : entry.getValue()) {
+                context.registerComponent(builder.getClazz(), builder.buildInstance());
             }
         }
     }
+
 }
