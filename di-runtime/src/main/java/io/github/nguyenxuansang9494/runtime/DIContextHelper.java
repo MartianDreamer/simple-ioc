@@ -34,7 +34,7 @@ public class DIContextHelper {
                 .sorted(Comparator.comparingInt(e -> e.getInjectAnnotatedField().length))
                 .collect(Collectors.toList());
         for (InstanceProvider instanceBuilder : instanceBuilders) {
-            context.registerComponent(instanceBuilder.getClass(), instanceBuilders);
+            registerComponent(instanceBuilder.getClass());
         }
     }
 

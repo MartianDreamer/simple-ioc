@@ -60,12 +60,12 @@ public class InstanceProvider {
         Inject inject = field.getAnnotation(Inject.class);
         Class<?> qualifiedClass = inject.qualified();
         Class<?> fieldClass = field.getType();
-        Component component = fieldClass.getAnnotation(Component.class);
-        if (ComponentScope.PROTOTYPE.equals(component.scope())) {
+        Component component = fieldClass.getDeclaredAnnotation(Component.class);
+        if (ComponentScope.PROTOTYPE == component.scope()) {
             field.set(instance, contextHelper.registerComponent(fieldClass));
             return;
         }
-        if (qualifiedClass != null) {
+        if (qualifiedClass != Object.class) {
             if (!fieldClass.isAssignableFrom(qualifiedClass)) {
                 throw new UnsupportedClassException("InstanceBuilder.setField - invalid qualified class.");
             }

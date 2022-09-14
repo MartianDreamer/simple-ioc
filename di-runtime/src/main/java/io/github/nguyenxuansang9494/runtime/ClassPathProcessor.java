@@ -1,19 +1,17 @@
 package io.github.nguyenxuansang9494.runtime;
 
+import io.github.nguyenxuansang9494.runtime.exception.InvalidClassPathException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.File;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import io.github.nguyenxuansang9494.runtime.exception.InvalidClassPathException;
-
 
 public class ClassPathProcessor {
-    
+
     private static final Logger LOGGER = LogManager.getLogger(ClassPathProcessor.class);
     
     private List<File> findAllFiles(File classPath) {
@@ -38,11 +36,10 @@ public class ClassPathProcessor {
     }
 
     public Class<?>[] scanAllClasses(Class<?> clazz) {
-        URL classLoaderPath = clazz.getClassLoader().getResource("");
-        if (classLoaderPath == null) {
-            throw new InvalidClassPathException("ClassPathProcessor.scanAllClasses - failed to get class path.");
-        }
-        File classPath = new File(classLoaderPath.getFile());
+        final String WHITESPACE = "%20";
+        String classPathStr = clazz.getProtectionDomain().getCodeSource().getLocation().getPath();
+        classPathStr = classPathStr.replace(WHITESPACE, " ");
+        File classPath = new File(classPathStr);
         List<File> files = findAllFiles(classPath);
         List<Class<?>> classes = new ArrayList<>();
         for (File file : files) {
