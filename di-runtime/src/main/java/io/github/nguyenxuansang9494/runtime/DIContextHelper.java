@@ -1,5 +1,6 @@
 package io.github.nguyenxuansang9494.runtime;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Comparator;
@@ -28,11 +29,11 @@ public class DIContextHelper {
     }
 
     public void add(Class<?> clazz) {
-        Field[] injectAnnotatedFields = classProcessor.findAnnotatedFields(clazz, Inject.class);
-        Method[] componentAnnotatedDeclaredMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class);
-        int priorityLevel = classProcessor.countAllAnnotations(injectAnnotatedFields, Inject.class);
-        InstanceProvider instanceProvider = new InstanceProvider(context, this, priorityLevel, clazz, injectAnnotatedFields,
-                componentAnnotatedDeclaredMethods, null, null);
+        List<Field> injectAnnotatedFields = classProcessor.findInheritedAnnotatedFields(clazz, Inject.class);
+        List<Method> componentAnnotatedDeclaredMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class);
+        int priorityLevel = calculatePriorityLevel(injectAnnotatedFields, Inject.class);
+        InstanceProvider instanceProvider = new InstanceProvider(context, this, priorityLevel, clazz, injectAnnotatedFields.toArray(new Field[]{}),
+                componentAnnotatedDeclaredMethods.toArray(new Method[]{}), null, null);
         instanceProviderMap.put(instanceProvider.getClazz(), instanceProvider);
     }
 
@@ -63,5 +64,19 @@ public class DIContextHelper {
             }
         }
         registerComponents();
+    }
+
+    private int calculatePriorityLevel(List<Field> annotatedFields, Class<? extends Annotation> annotation) {
+        int count = annotatedFields.size();
+        for (Field field : annotatedFields) {
+            InstanceProvider instanceProvider = instanceProviderMap.get(field.getType());
+            if (instanceProvider != null) {
+                count += instanceProvider.getPriorityLevel();
+                continue;
+            }
+            List<Field> depAnnotatedField = classProcessor.findInheritedAnnotatedFields(field.getType(), annotation);
+            count+= calculatePriorityLevel(depAnnotatedField, annotation);
+        }
+        return count;
     }
 }
