@@ -1,6 +1,7 @@
 package io.github.nguyenxuansang9494.runtime;
 
 import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,9 +18,10 @@ public class ClassPathProcessor {
     
     private List<File> findAllFiles(File classPath) {
         List<File> result = new LinkedList<>();
-        if (!classPath.isDirectory())
-            throw new InvalidClassPathException("classpath is not a directory");
         File[] files = classPath.listFiles();
+        if (files == null) {
+            throw new InvalidClassPathException("ClassPathProcessor.findAllFiles - classpath is not a directory");
+        }
         for (File e : files) {
             if (e.isFile() && e.getName().endsWith(".class"))
                 result.add(e);
@@ -36,7 +38,11 @@ public class ClassPathProcessor {
     }
 
     public Class<?>[] scanAllClasses(Class<?> clazz) {
-        File classPath = new File(clazz.getClassLoader().getResource("").getFile());
+        URL classLoaderPath = clazz.getClassLoader().getResource("");
+        if (classLoaderPath == null) {
+            throw new InvalidClassPathException("ClassPathProcessor.scanAllClasses - failed to get class path.");
+        }
+        File classPath = new File(classLoaderPath.getFile());
         List<File> files = findAllFiles(classPath);
         List<Class<?>> classes = new ArrayList<>();
         for (File file : files) {
