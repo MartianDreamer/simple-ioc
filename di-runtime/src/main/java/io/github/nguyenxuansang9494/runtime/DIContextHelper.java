@@ -2,6 +2,7 @@ package io.github.nguyenxuansang9494.runtime;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,7 +31,7 @@ public class DIContextHelper {
 
     private void registerComponents() {
         List<InstanceProvider> instanceBuilders = instanceProviderMap.values().stream()
-                .sorted((e1, e2) -> e1.getInjectAnnotatedField().length - e2.getInjectAnnotatedField().length)
+                .sorted(Comparator.comparingInt(e -> e.getInjectAnnotatedField().length))
                 .collect(Collectors.toList());
         for (InstanceProvider instanceBuilder : instanceBuilders) {
             context.registerComponent(instanceBuilder.getClass(), instanceBuilders);

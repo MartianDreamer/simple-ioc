@@ -7,9 +7,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-public class SimpleDIContext implements DIContext {
+public final class SimpleDIContext implements DIContext {
     Map<Class<?>, List<Object>> pool;
     private static final DIContext CONTEXT = new SimpleDIContext();
+    private SimpleDIContext() {
+        super();
+    }
 
     public static DIContext getContext() {
         return CONTEXT;
