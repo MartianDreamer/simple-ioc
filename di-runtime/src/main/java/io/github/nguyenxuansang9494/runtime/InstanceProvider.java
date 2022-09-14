@@ -40,8 +40,9 @@ public class InstanceProvider {
                 setField(instance, field);
             }
             for (Method method : componentAnnotatedMethod) {
-                Component component = method.getAnnotation(Component.class);
+                Component component = method.getDeclaredAnnotation(Component.class);
                 if (ComponentScope.PROTOTYPE.equals(component.scope())) {
+                    contextHelper.add(method.getReturnType(), method, instance);
                     continue;
                 }
                 context.registerComponent(method.getReturnType(), method.invoke(instance));

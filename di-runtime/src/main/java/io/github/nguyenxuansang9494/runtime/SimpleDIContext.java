@@ -26,6 +26,6 @@ public class SimpleDIContext implements DIContext {
     public void registerComponent(Class<?> clazz, Object component) {
         List<Object> components = pool.getOrDefault(clazz, new LinkedList<>());
         components.add(component);
-        pool.putIfAbsent(clazz, components);
+        pool.put(clazz, components);
     }
 }
