@@ -1,6 +1,7 @@
 package io.github.nguyenxuansang9494.runtime;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ public final class SimpleDIContext implements DIContext {
     private static final DIContext CONTEXT = new SimpleDIContext();
     private SimpleDIContext() {
         super();
+        this.pool = new HashMap<>();
     }
 
     public static DIContext getContext() {
