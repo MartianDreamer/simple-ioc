@@ -23,6 +23,7 @@ public class InstanceProvider {
     private static final Logger LOGGER = LogManager.getLogger(InstanceProvider.class);
     private final DIContext context;
     private final DIContextHelper contextHelper;
+    private int priorityLevel;
     private final Class<?> clazz;
     private final Field[] injectAnnotatedField;
     private final Method[] componentAnnotatedMethod;
@@ -41,15 +42,14 @@ public class InstanceProvider {
             }
             for (Method method : componentAnnotatedMethod) {
                 Component component = method.getDeclaredAnnotation(Component.class);
-                if (ComponentScope.PROTOTYPE.equals(component.scope())) {
-                    contextHelper.add(method.getReturnType(), method, instance);
-                    continue;
+                contextHelper.add(method.getReturnType(), method, instance);
+                if (ComponentScope.SINGLETON.equals(component.scope())) {
+                    context.registerComponent(method.getReturnType(), method.invoke(instance));
                 }
-                context.registerComponent(method.getReturnType(), method.invoke(instance));
             }
             return instance;
         } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException
-                | IllegalArgumentException | InvocationTargetException e) {
+                 | IllegalArgumentException | InvocationTargetException e) {
             LOGGER.error("InstanceBuilder.instantiate - {}", e.getMessage());
             throw new UnsupportedClassException(e);
         }
@@ -57,14 +57,45 @@ public class InstanceProvider {
 
     private void setField(Object instance, Field field) throws IllegalArgumentException, IllegalAccessException {
         field.setAccessible(true);
-        Inject inject = field.getAnnotation(Inject.class);
-        Class<?> qualifiedClass = inject.qualified();
         Class<?> fieldClass = field.getType();
         Component component = fieldClass.getDeclaredAnnotation(Component.class);
-        if (ComponentScope.PROTOTYPE == component.scope()) {
-            field.set(instance, contextHelper.registerComponent(fieldClass));
+        ComponentScope scope;
+        if (component == null) {
+            InstanceProvider instanceProvider = contextHelper.get(fieldClass);
+            if (instanceProvider == null) {
+                throw new UnsupportedClassException("InstanceProvider.setField - no bean found");
+            }
+            scope = instanceProvider.getInstantiateMethod().getDeclaredAnnotation(Component.class).scope();
+        } else {
+            scope = component.scope();
+        }
+        if (ComponentScope.PROTOTYPE.equals(scope)) {
+            setFieldPrototype(instance, field);
             return;
         }
+        setFieldSingleton(instance, field);
+    }
+
+    private void setFieldPrototype(Object instance, Field field) throws IllegalAccessException {
+        field.setAccessible(true);
+        Inject inject = field.getDeclaredAnnotation(Inject.class);
+        Class<?> qualifiedClass = inject.qualified();
+        Class<?> fieldClass = field.getType();
+        if (qualifiedClass != Object.class) {
+            if (!fieldClass.isAssignableFrom(qualifiedClass)) {
+                throw new UnsupportedClassException("InstanceBuilder.setField - invalid qualified class.");
+            }
+            field.set(instance, contextHelper.registerComponent(qualifiedClass));
+            return;
+        }
+        field.set(instance, contextHelper.registerComponent(fieldClass));
+    }
+
+    private void setFieldSingleton(Object instance, Field field) throws IllegalAccessException {
+        field.setAccessible(true);
+        Inject inject = field.getDeclaredAnnotation(Inject.class);
+        Class<?> qualifiedClass = inject.qualified();
+        Class<?> fieldClass = field.getType();
         if (qualifiedClass != Object.class) {
             if (!fieldClass.isAssignableFrom(qualifiedClass)) {
                 throw new UnsupportedClassException("InstanceBuilder.setField - invalid qualified class.");

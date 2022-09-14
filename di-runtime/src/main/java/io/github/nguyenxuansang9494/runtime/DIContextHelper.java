@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import io.github.nguyenxuansang9494.annotations.Component;
 import io.github.nguyenxuansang9494.annotations.Inject;
+import io.github.nguyenxuansang9494.runtime.exception.ClassNotFoundRuntimeException;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
@@ -19,27 +20,37 @@ public class DIContextHelper {
     private final Map<Class<?>, InstanceProvider> instanceProviderMap;
 
     public void add(Class<?> clazz, Method instantiateMethod, Object configObject) {
-        instanceProviderMap.put(clazz, new InstanceProvider(context, this, clazz, new Field[]{}, new Method[]{}, instantiateMethod, configObject));
+        instanceProviderMap.put(clazz, new InstanceProvider(context, this, 0, clazz, new Field[]{}, new Method[]{}, instantiateMethod, configObject));
     }
+
+    public InstanceProvider get(Class<?> clazz) {
+        return instanceProviderMap.get(clazz);
+    }
+
     public void add(Class<?> clazz) {
         Field[] injectAnnotatedFields = classProcessor.findAnnotatedFields(clazz, Inject.class);
         Method[] componentAnnotatedDeclaredMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class);
-        InstanceProvider instanceBuilder = new InstanceProvider(context, this, clazz, injectAnnotatedFields,
+        int priorityLevel = classProcessor.countAllAnnotations(injectAnnotatedFields, Inject.class);
+        InstanceProvider instanceProvider = new InstanceProvider(context, this, priorityLevel, clazz, injectAnnotatedFields,
                 componentAnnotatedDeclaredMethods, null, null);
-        instanceProviderMap.put(instanceBuilder.getClass(), instanceBuilder);
+        instanceProviderMap.put(instanceProvider.getClazz(), instanceProvider);
     }
 
     private void registerComponents() {
-        List<InstanceProvider> instanceBuilders = instanceProviderMap.values().stream()
-                .sorted(Comparator.comparingInt(e -> e.getInjectAnnotatedField().length))
+        List<InstanceProvider> instanceProviders = instanceProviderMap.values().stream()
+                .sorted(Comparator.comparingInt(InstanceProvider::getPriorityLevel))
                 .collect(Collectors.toList());
-        for (InstanceProvider instanceBuilder : instanceBuilders) {
-            registerComponent(instanceBuilder.getClass());
+        for (InstanceProvider instanceProvider : instanceProviders) {
+            registerComponent(instanceProvider.getClazz());
         }
     }
 
     public Object registerComponent(Class<?> clazz) {
-        Object object = instanceProviderMap.get(clazz).instantiate();
+        InstanceProvider instanceProvider = instanceProviderMap.get(clazz);
+        if (instanceProvider == null) {
+            throw new ClassNotFoundRuntimeException("DIContextHelper.registerComponent - missing InstanceProvider");
+        }
+        Object object = instanceProvider.instantiate();
         context.registerComponent(clazz, object);
         return object;
     }
