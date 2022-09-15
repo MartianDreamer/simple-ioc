@@ -11,9 +11,16 @@ import java.util.List;
 
 
 public class ClassPathProcessor {
-
+    private static final ClassPathProcessor instance = new ClassPathProcessor();
     private static final Logger LOGGER = LogManager.getLogger(ClassPathProcessor.class);
-    
+
+    private ClassPathProcessor() {
+        super();
+    }
+    public static ClassPathProcessor getInstance() {
+        return instance;
+    }
+
     private List<File> findAllFiles(File classPath) {
         List<File> result = new LinkedList<>();
         File[] files = classPath.listFiles();

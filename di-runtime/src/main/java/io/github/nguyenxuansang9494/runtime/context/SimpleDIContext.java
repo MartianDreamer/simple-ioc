@@ -60,6 +60,7 @@ public final class SimpleDIContext implements DIContext {
 
     @Override
     public <T> T getComponent(Class<T> clazz) {
-        return clazz.cast(getComponents(clazz).get(0));
+        List<Object> components = getComponents(clazz);
+        return components.isEmpty() ? clazz.cast(getComponents(clazz).get(0)) : null;
     }
 }

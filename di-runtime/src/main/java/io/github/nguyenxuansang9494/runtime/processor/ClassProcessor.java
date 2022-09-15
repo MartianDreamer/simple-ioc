@@ -9,6 +9,15 @@ import java.util.stream.Stream;
 
 
 public class ClassProcessor {
+    private static final ClassProcessor instance = new ClassProcessor();
+
+    private ClassProcessor() {
+        super();
+    }
+
+    public static ClassProcessor getInstance() {
+        return instance;
+    }
 
     private List<Field> findDeclaredAnnotatedFields(Class<?> clazz, Class<? extends Annotation> annotation) {
         return Stream.of(clazz.getDeclaredFields()).filter(f -> f.getAnnotation(annotation)!=null).collect(Collectors.toList());
