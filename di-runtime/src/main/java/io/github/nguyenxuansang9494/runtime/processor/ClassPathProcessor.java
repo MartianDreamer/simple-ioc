@@ -1,4 +1,4 @@
-package io.github.nguyenxuansang9494.runtime;
+package io.github.nguyenxuansang9494.runtime.processor;
 
 import io.github.nguyenxuansang9494.runtime.exception.InvalidClassPathException;
 import org.apache.logging.log4j.LogManager;
