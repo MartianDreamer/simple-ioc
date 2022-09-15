@@ -1,6 +1,7 @@
 package io.github.nguyenxuansang9494.runtime.context;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,11 +9,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public final class SimpleDIContext implements DIContext {
-    Map<Class<?>, List<Object>> pool;
+    private final Map<Class<?>, List<Object>> componentPool;
+    private final List<MethodExecutor> executors;
     private static final DIContext CONTEXT = new SimpleDIContext();
     private SimpleDIContext() {
         super();
-        this.pool = new HashMap<>();
+        this.executors = new LinkedList<>();
+        this.componentPool = new HashMap<>();
     }
 
     public static DIContext getContext() {
@@ -21,7 +24,7 @@ public final class SimpleDIContext implements DIContext {
 
     @Override
     public List<Object> getChildrenClassComponent(Class<?> clazz) {
-        return pool.entrySet().stream()
+        return componentPool.entrySet().stream()
                 .filter(e -> clazz.isAssignableFrom(e.getKey()))
                 .map(Entry::getValue)
                 .reduce((a,b) -> {
@@ -34,14 +37,25 @@ public final class SimpleDIContext implements DIContext {
 
     @Override
     public List<Object> getComponents(Class<?> clazz) {
-        return pool.getOrDefault(clazz, Collections.emptyList());
+        return componentPool.getOrDefault(clazz, Collections.emptyList());
     }
 
     @Override
     public void registerComponent(Class<?> clazz, Object component) {
-        List<Object> components = pool.getOrDefault(clazz, new LinkedList<>());
+        List<Object> components = componentPool.getOrDefault(clazz, new LinkedList<>());
         components.add(component);
-        pool.put(clazz, components);
+        componentPool.put(clazz, components);
+    }
+
+    @Override
+    public void registerExecutor(MethodExecutor methodExecutor) {
+        executors.add(methodExecutor);
+    }
+
+    @Override
+    public void executeRunners() {
+        executors.sort(Comparator.comparingInt(MethodExecutor::getPriorityLevel));
+        executors.forEach(MethodExecutor::execute);
     }
 
     @Override

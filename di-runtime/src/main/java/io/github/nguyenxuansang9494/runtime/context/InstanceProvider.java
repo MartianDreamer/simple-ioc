@@ -27,6 +27,7 @@ public class InstanceProvider {
     private final Class<?> clazz;
     private final Field[] injectAnnotatedField;
     private final Method[] componentAnnotatedMethod;
+    private final Method[] runnerAnnotatedMethod;
     private final Method instantiateMethod;
     private final Object configObject;
 
@@ -42,10 +43,13 @@ public class InstanceProvider {
             }
             for (Method method : componentAnnotatedMethod) {
                 Component component = method.getDeclaredAnnotation(Component.class);
-                contextHelper.add(method.getReturnType(), method, instance);
+                contextHelper.addInstanceProvider(method.getReturnType(), method, instance);
                 if (ComponentScope.SINGLETON.equals(component.scope())) {
                     context.registerComponent(method.getReturnType(), method.invoke(instance));
                 }
+            }
+            for (Method method : runnerAnnotatedMethod) {
+                contextHelper.registerExecutor(method, instance);
             }
             return instance;
         } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException

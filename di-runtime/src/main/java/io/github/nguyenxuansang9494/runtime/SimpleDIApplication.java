@@ -32,5 +32,6 @@ public final class SimpleDIApplication {
         Map<Class<?>, InstanceProvider> instanceProviderMap = new HashMap<>();
         DIContextHelper contextHelper = new DIContextHelper(classProcessor, classPathProcessor, context, instanceProviderMap);
         contextHelper.setUpContext(clazz);
+        context.executeRunners();
     }
 }

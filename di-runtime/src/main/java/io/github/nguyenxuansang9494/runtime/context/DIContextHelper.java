@@ -9,7 +9,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import io.github.nguyenxuansang9494.annotations.Component;
+import io.github.nguyenxuansang9494.annotations.ComponentScope;
 import io.github.nguyenxuansang9494.annotations.Inject;
+import io.github.nguyenxuansang9494.annotations.Runner;
 import io.github.nguyenxuansang9494.runtime.exception.ClassNotFoundRuntimeException;
 import io.github.nguyenxuansang9494.runtime.processor.ClassPathProcessor;
 import io.github.nguyenxuansang9494.runtime.processor.ClassProcessor;
@@ -22,8 +24,8 @@ public class DIContextHelper {
     private final DIContext context;
     private final Map<Class<?>, InstanceProvider> instanceProviderMap;
 
-    public void add(Class<?> clazz, Method instantiateMethod, Object configObject) {
-        instanceProviderMap.put(clazz, new InstanceProvider(context, this, 0, clazz, new Field[]{}, new Method[]{}, instantiateMethod, configObject));
+    public void addInstanceProvider(Class<?> clazz, Method instantiateMethod, Object configObject) {
+        instanceProviderMap.put(clazz, new InstanceProvider(context, this, 0, clazz, new Field[]{}, new Method[]{}, new Method[]{}, instantiateMethod,configObject));
     }
 
     public InstanceProvider getInstanceProvider(Class<?> clazz) {
@@ -35,10 +37,11 @@ public class DIContextHelper {
 
     public void addInstanceProvider(Class<?> clazz) {
         List<Field> injectAnnotatedFields = classProcessor.findInheritedAnnotatedFields(clazz, Inject.class);
-        List<Method> componentAnnotatedDeclaredMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class);
+        List<Method> runnerAnnotatedMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Runner.class);
+        List<Method> componentAnnotatedMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class);
         int priorityLevel = calculatePriorityLevel(injectAnnotatedFields, Inject.class);
         InstanceProvider instanceProvider = new InstanceProvider(context, this, priorityLevel, clazz, injectAnnotatedFields.toArray(new Field[]{}),
-                componentAnnotatedDeclaredMethods.toArray(new Method[]{}), null, null);
+                componentAnnotatedMethods.toArray(new Method[]{}), runnerAnnotatedMethods.toArray(new Method[]{}), null, null);
         instanceProviderMap.put(instanceProvider.getClazz(), instanceProvider);
     }
 
@@ -53,8 +56,12 @@ public class DIContextHelper {
 
     public Object registerComponent(Class<?> clazz) {
         InstanceProvider instanceProvider = instanceProviderMap.get(clazz);
+        Component component = clazz.getDeclaredAnnotation(Component.class);
         if (instanceProvider == null) {
             throw new ClassNotFoundRuntimeException("DIContextHelper.registerComponent - missing InstanceProvider");
+        }
+        if (ComponentScope.PROTOTYPE.equals(component.scope())) {
+            return null;
         }
         Object object = instanceProvider.instantiate();
         context.registerComponent(clazz, object);
@@ -83,5 +90,9 @@ public class DIContextHelper {
             count+= calculatePriorityLevel(depAnnotatedField, annotation);
         }
         return count;
+    }
+
+    public void registerExecutor(Method method, Object object) {
+        context.registerExecutor(new MethodExecutor(method, object));
     }
 }

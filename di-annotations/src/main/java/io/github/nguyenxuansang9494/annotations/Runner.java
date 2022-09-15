@@ -10,5 +10,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Documented
 public @interface Runner {
-    
+    int priority() default Integer.MIN_VALUE;
 }
