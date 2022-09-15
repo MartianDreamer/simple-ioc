@@ -61,7 +61,7 @@ public class InstanceProvider {
         Component component = fieldClass.getDeclaredAnnotation(Component.class);
         ComponentScope scope;
         if (component == null) {
-            InstanceProvider instanceProvider = contextHelper.get(fieldClass);
+            InstanceProvider instanceProvider = contextHelper.getInstanceProvider(fieldClass);
             if (instanceProvider == null) {
                 throw new UnsupportedClassException("InstanceProvider.setField - no bean found");
             }
@@ -88,7 +88,11 @@ public class InstanceProvider {
             field.set(instance, contextHelper.registerComponent(qualifiedClass));
             return;
         }
-        field.set(instance, contextHelper.registerComponent(fieldClass));
+        List<Class<?>> childClasses = contextHelper.getChildClasses(fieldClass);
+        if (childClasses.size() != 1) {
+            throw new FailedToInjectDependencyException("InstanceBuilder.setPrototypeField - more or less than one valid bean");
+        }
+        field.set(instance, contextHelper.registerComponent(childClasses.get(0)));
     }
 
     private void setFieldSingleton(Object instance, Field field) throws IllegalAccessException {

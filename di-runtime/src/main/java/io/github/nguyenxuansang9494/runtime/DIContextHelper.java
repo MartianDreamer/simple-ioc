@@ -24,11 +24,14 @@ public class DIContextHelper {
         instanceProviderMap.put(clazz, new InstanceProvider(context, this, 0, clazz, new Field[]{}, new Method[]{}, instantiateMethod, configObject));
     }
 
-    public InstanceProvider get(Class<?> clazz) {
+    public InstanceProvider getInstanceProvider(Class<?> clazz) {
         return instanceProviderMap.get(clazz);
     }
+    public List<Class<?>> getChildClasses(Class<?> clazz) {
+        return instanceProviderMap.keySet().stream().filter(clazz::isAssignableFrom).collect(Collectors.toList());
+    }
 
-    public void add(Class<?> clazz) {
+    public void addInstanceProvider(Class<?> clazz) {
         List<Field> injectAnnotatedFields = classProcessor.findInheritedAnnotatedFields(clazz, Inject.class);
         List<Method> componentAnnotatedDeclaredMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class);
         int priorityLevel = calculatePriorityLevel(injectAnnotatedFields, Inject.class);
@@ -60,7 +63,7 @@ public class DIContextHelper {
         Class<?>[] classes = classPathProcessor.scanAllClasses(mainClass);
         for (Class<?> clazz : classes) {
             if (clazz.getDeclaredAnnotation(Component.class) != null) {
-                this.add(clazz);
+                this.addInstanceProvider(clazz);
             }
         }
         registerComponents();
