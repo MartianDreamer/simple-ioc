@@ -4,3 +4,12 @@ Support 3 annotations:
 * Configuration: marking classes which contain @Component methods. Those classes are treated like singleton component classes.
 * Inject: marking fields in which dependencies are injected. You can specify a class which is prioritized for annotated fields by parameter qualified.
 * Runner: marking method which will be executed by DIContext. It must be used in a @Component classes.
+
+SimpleDiApplication should be used like this
+```
+public class YourMainClass {
+    public static void main(String[] args) {
+        SimpleDIApplication.run(YourMainClass.class);
+    }
+}
+```
