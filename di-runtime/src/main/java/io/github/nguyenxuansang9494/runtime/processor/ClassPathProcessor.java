@@ -1,8 +1,7 @@
 package io.github.nguyenxuansang9494.runtime.processor;
 
+import io.github.nguyenxuansang9494.runtime.exception.ClassNotFoundRuntimeException;
 import io.github.nguyenxuansang9494.runtime.exception.InvalidClassPathException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -11,7 +10,6 @@ import java.util.List;
 
 public class ClassPathProcessor {
     private static final ClassPathProcessor instance = new ClassPathProcessor();
-    private static final Logger LOGGER = LogManager.getLogger(ClassPathProcessor.class);
 
     private ClassPathProcessor() {
         super();
@@ -50,11 +48,10 @@ public class ClassPathProcessor {
         List<Class<?>> classes = new LinkedList<>();
         for (File file : files) {
             String className = getClassName(classPath.getPath(), file.getPath());
-            LOGGER.info("File path: {}", file.getName());
             try {
                 classes.add(Class.forName(className));
             } catch (ClassNotFoundException e) {
-                LOGGER.error("ClassPathProcessor.scanAllClasses - {}", e.getMessage());
+                throw new ClassNotFoundRuntimeException(e);
             }
         }
         return classes;
