@@ -1,29 +1,25 @@
 package io.github.nguyenxuansang9494.runtime.context;
 
+import io.github.nguyenxuansang9494.annotations.Component;
+import io.github.nguyenxuansang9494.annotations.ComponentScope;
+import io.github.nguyenxuansang9494.annotations.Inject;
+import io.github.nguyenxuansang9494.annotations.Runner;
+import io.github.nguyenxuansang9494.runtime.exception.FailedToRegisterDependencyException;
+import io.github.nguyenxuansang9494.runtime.exception.UnsupportedClassException;
+import io.github.nguyenxuansang9494.runtime.processor.ClassProcessor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import io.github.nguyenxuansang9494.annotations.Runner;
-import io.github.nguyenxuansang9494.runtime.processor.ClassProcessor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import io.github.nguyenxuansang9494.annotations.Component;
-import io.github.nguyenxuansang9494.annotations.ComponentScope;
-import io.github.nguyenxuansang9494.annotations.Inject;
-import io.github.nguyenxuansang9494.runtime.exception.FailedToRegisterDependencyException;
-import io.github.nguyenxuansang9494.runtime.exception.UnsupportedClassException;
-import lombok.Getter;
-
-@Getter
 public class InstanceProvider {
     private static final Logger LOGGER = LogManager.getLogger(InstanceProvider.class);
     private final DIContext context = SimpleDIContext.getContext();
     private final DIContextHelper contextHelper = DIContextHelper.getInstance();
-    private final ClassProcessor classProcessor = ClassProcessor.getInstance();
     private final Class<?> clazz;
     private final Field[] injectAnnotatedField;
     private final Method[] componentAnnotatedMethod;
@@ -31,8 +27,33 @@ public class InstanceProvider {
     private final Method instantiateMethod;
     private final Object configObject;
 
+    public Class<?> getClazz() {
+        return clazz;
+    }
+
+    public Field[] getInjectAnnotatedField() {
+        return injectAnnotatedField;
+    }
+
+    public Method[] getComponentAnnotatedMethod() {
+        return componentAnnotatedMethod;
+    }
+
+    public Method[] getRunnerAnnotatedMethod() {
+        return runnerAnnotatedMethod;
+    }
+
+    public Method getInstantiateMethod() {
+        return instantiateMethod;
+    }
+
+    public Object getConfigObject() {
+        return configObject;
+    }
+
     public InstanceProvider(Class<?> clazz) {
         this.clazz = clazz;
+        ClassProcessor classProcessor = ClassProcessor.getInstance();
         this.injectAnnotatedField = classProcessor.findInheritedAnnotatedFields(clazz, Inject.class).toArray(new Field[]{});
         this.componentAnnotatedMethod = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class).toArray(new Method[]{});
         this.runnerAnnotatedMethod = classProcessor.findDeclaredAnnotatedMethods(clazz, Runner.class).toArray(new Method[]{});
