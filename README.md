@@ -1,5 +1,6 @@
 # Simple Dependency Injection Library
 Support 3 annotations:
-* Component: mark beans. It can be used on methods or classes. It has 2 scopes which are singleton and prototype.
-* Inject: inject a dependency. It is  used to annotated fields. You can specify a class which is prioritized for annotated field by parameter qualified.
-* Runner: run a method. It is used to annotated methods in beans or static methods.
+* Component: marking beans. It can be used on methods or classes. It has 2 scopes which are singleton and prototype.
+* Configuration: marking classes which contain @Component methods. Those classes are treated like singleton component classes.
+* Inject: marking fields in which dependencies are injected. You can specify a class which is prioritized for annotated fields by parameter qualified.
+* Runner: marking method which will be executed by DIContext. It must be used in a @Component classes.
