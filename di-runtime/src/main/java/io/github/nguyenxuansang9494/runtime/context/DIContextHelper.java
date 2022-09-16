@@ -7,6 +7,7 @@ import io.github.nguyenxuansang9494.runtime.exception.UnsupportedClassException;
 import io.github.nguyenxuansang9494.runtime.processor.ClassPathProcessor;
 import io.github.nguyenxuansang9494.runtime.processor.ClassProcessor;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,14 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DIContextHelper {
     private final ClassProcessor classProcessor = ClassProcessor.getInstance();
     private final ClassPathProcessor classPathProcessor = ClassPathProcessor.getInstance();
     private final DIContext context = SimpleDIContext.getContext();
     private final Map<Class<?>, InstanceProvider> prototypeInstanceProviderMap = new HashMap<>();
-    private Set<Class<?>> registeredClasses;
+    private final Map<Class<?>, Annotation> registeredClasses = new HashMap<>();
     private static final DIContextHelper instance = new DIContextHelper();
 
     public static DIContextHelper getInstance() {
@@ -38,16 +38,15 @@ public class DIContextHelper {
     }
 
     public List<Class<?>> getChildClasses(Class<?> clazz) {
-        return registeredClasses.stream().filter(clazz::isAssignableFrom).collect(Collectors.toList());
+        return registeredClasses.keySet().stream().filter(clazz::isAssignableFrom).collect(Collectors.toList());
     }
 
     public Object registerComponent(Class<?> clazz) {
-        Component component = clazz.getDeclaredAnnotation(Component.class);
-        Configuration configuration = clazz.getDeclaredAnnotation(Configuration.class);
-        if (!registeredClasses.contains(clazz)) {
+        if (!registeredClasses.containsKey(clazz)) {
             throw new UnsupportedClassException("DIContextHelper.registerComponent - no bean is declared.");
         }
-        if (configuration != null || (prototypeInstanceProviderMap.get(clazz) == null && ComponentScope.SINGLETON.equals(component.scope()))) {
+        Annotation annotation = registeredClasses.get(clazz);
+        if (annotation instanceof Configuration || ((Component) annotation).scope() == ComponentScope.SINGLETON) {
             Object provideInstance = context.getComponent(clazz);
             if (provideInstance != null) {
                 return provideInstance;
@@ -67,14 +66,26 @@ public class DIContextHelper {
 
 
     public void setUpContext(Class<?> mainClass) {
-        List<Class<?>> componentClasses = Stream.of(classPathProcessor.scanAllClasses(mainClass)).filter(c -> c.getDeclaredAnnotation(Component.class) != null || c.getDeclaredAnnotation(Configuration.class) != null).collect(Collectors.toList());
-        this.registeredClasses = new HashSet<>(componentClasses);
+        List<Class<?>> componentClasses = classPathProcessor.scanAllClasses(mainClass);
         for (Class<?> clazz : componentClasses) {
+            Component component = clazz.getDeclaredAnnotation(Component.class);
+            Configuration configuration = clazz.getDeclaredAnnotation(Configuration.class);
+            if (component != null) {
+                registeredClasses.put(clazz, component);
+            } else if (configuration != null) {
+                registeredClasses.put(clazz, configuration);
+            }
+        }
+        final Set<Method> componentMethodSet = new HashSet<>();
+        for (Class<?> clazz : registeredClasses.keySet()) {
             if (clazz.getDeclaredAnnotation(Configuration.class) != null) {
                 List<Method> componentMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class);
-                registeredClasses.addAll(componentMethods.stream().map(Method::getReturnType).collect(Collectors.toList()));
+                componentMethodSet.addAll(componentMethods);
                 registerComponent(clazz);
             }
+        }
+        for (Method method : componentMethodSet) {
+            registeredClasses.put(method.getReturnType(), method.getDeclaredAnnotation(Component.class));
         }
         for (Class<?> clazz : componentClasses) {
             if (clazz.getDeclaredAnnotation(Component.class) != null) {

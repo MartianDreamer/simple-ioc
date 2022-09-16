@@ -5,7 +5,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -42,13 +41,13 @@ public class ClassPathProcessor {
         return className;
     }
 
-    public Class<?>[] scanAllClasses(Class<?> clazz) {
+    public List<Class<?>> scanAllClasses(Class<?> clazz) {
         final String WHITESPACE = "%20";
         String classPathStr = clazz.getProtectionDomain().getCodeSource().getLocation().getPath();
         classPathStr = classPathStr.replace(WHITESPACE, " ");
         File classPath = new File(classPathStr);
         List<File> files = findAllFiles(classPath);
-        List<Class<?>> classes = new ArrayList<>();
+        List<Class<?>> classes = new LinkedList<>();
         for (File file : files) {
             String className = getClassName(classPath.getPath(), file.getPath());
             LOGGER.info("File path: {}", file.getName());
@@ -58,6 +57,6 @@ public class ClassPathProcessor {
                 LOGGER.error("ClassPathProcessor.scanAllClasses - {}", e.getMessage());
             }
         }
-        return classes.toArray(new Class[]{});
+        return classes;
     }
 }

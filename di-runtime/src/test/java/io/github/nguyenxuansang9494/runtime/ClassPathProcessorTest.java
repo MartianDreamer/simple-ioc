@@ -8,6 +8,6 @@ public class ClassPathProcessorTest {
     @Test
     void testScanAllClasses() {
         ClassPathProcessor classPathProcessor = ClassPathProcessor.getInstance();
-        Assertions.assertEquals(classPathProcessor.scanAllClasses(this.getClass())[0], this.getClass());
+        Assertions.assertEquals(classPathProcessor.scanAllClasses(this.getClass()).get(0), this.getClass());
     }
 }
