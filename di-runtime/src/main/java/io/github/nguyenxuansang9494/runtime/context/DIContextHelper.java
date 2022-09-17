@@ -46,7 +46,7 @@ public class DIContextHelper {
             throw new UnsupportedClassException("DIContextHelper.registerComponent - no bean is declared.");
         }
         Annotation annotation = registeredClasses.get(clazz);
-        if (annotation instanceof Configuration || ((Component) annotation).scope() == ComponentScope.SINGLETON) {
+        if (annotation instanceof Configuration || ((Component) annotation).scope().equals(ComponentScope.SINGLETON)) {
             Object provideInstance = context.getComponent(clazz);
             if (provideInstance != null) {
                 return provideInstance;

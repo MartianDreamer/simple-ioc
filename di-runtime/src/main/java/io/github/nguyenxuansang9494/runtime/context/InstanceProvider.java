@@ -4,6 +4,7 @@ import io.github.nguyenxuansang9494.annotations.Component;
 import io.github.nguyenxuansang9494.annotations.ComponentScope;
 import io.github.nguyenxuansang9494.annotations.Inject;
 import io.github.nguyenxuansang9494.annotations.Runner;
+import io.github.nguyenxuansang9494.runtime.context.model.OptionalObject;
 import io.github.nguyenxuansang9494.runtime.exception.FailedToRegisterDependencyException;
 import io.github.nguyenxuansang9494.runtime.exception.UnsupportedClassException;
 import io.github.nguyenxuansang9494.runtime.processor.ClassProcessor;
@@ -15,6 +16,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Set;
 
 public class InstanceProvider {
     private static final Logger LOGGER = LogManager.getLogger(InstanceProvider.class);
@@ -97,6 +99,15 @@ public class InstanceProvider {
             LOGGER.error("InstanceBuilder.instantiate - {}", e.getMessage());
             throw new UnsupportedClassException(e);
         }
+    }
+
+    public OptionalObject provide() {
+        // Solve crossly depend component problem;
+        return null;
+    };
+    public OptionalObject provide(Set<Class<?>> dependantClasses) {
+        // Solve crossly depend component problem;
+        return null;
     }
 
     private void setField(Object instance, Field field) throws IllegalArgumentException, IllegalAccessException {
