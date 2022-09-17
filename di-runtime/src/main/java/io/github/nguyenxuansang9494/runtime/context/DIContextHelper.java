@@ -49,34 +49,40 @@ public class DIContextHelper {
             throw new UnsupportedClassException("DIContextHelper.registerComponent - no bean is declared.");
         }
         Annotation annotation = registeredClasses.get(clazz);
+        OptionalObject optionalObject;
+        Object providedInstance;
         if (annotation instanceof Configuration || ((Component) annotation).scope().equals(ComponentScope.SINGLETON)) {
-            Object providedInstance = context.getComponent(clazz);
-            Object partlyFormedObject = partlyInstantiatingObjects.get(clazz);
+            providedInstance = context.getComponent(clazz);
             if (providedInstance != null) {
                 return new OptionalObject(providedInstance, true);
-            } else if (partlyFormedObject != null) {
-                return new OptionalObject(partlyFormedObject, false);
             }
-            OptionalObject optionalObject = new InstanceProvider(clazz).provide(dependantClasses);
-            providedInstance = optionalObject.getObject();
-            if (optionalObject.isComplete()) {
-                context.registerComponent(clazz, providedInstance);
-            } else if (providedInstance != null) {
-                partlyInstantiatingObjects.put(clazz, providedInstance);
+            providedInstance = partlyInstantiatingObjects.get(clazz);
+            if (providedInstance != null) {
+                return new OptionalObject(providedInstance, true);
             }
-            return optionalObject;
+            optionalObject = new InstanceProvider(clazz).provide(dependantClasses);
+        } else {
+            if (!prototypeInstanceProviderMap.containsKey(clazz)) {
+                prototypeInstanceProviderMap.put(clazz, new InstanceProvider(clazz));
+                return null;
+            }
+            optionalObject = prototypeInstanceProviderMap.get(clazz).provide(dependantClasses);
         }
-        if (prototypeInstanceProviderMap.get(clazz) != null) {
-            OptionalObject optionalObject = prototypeInstanceProviderMap.get(clazz).provide(dependantClasses);
-            if (optionalObject.isComplete()) {
-                context.registerComponent(clazz, optionalObject.getObject());
-            } else {
-                throw new FailedToRegisterDependencyException("DIContextHelper.registerComponent - cross dependence is not supported for prototype components.");
-            }
-            return optionalObject;
+        providedInstance = optionalObject.getObject();
+        if (optionalObject.isComplete()) {
+            context.registerComponent(clazz, optionalObject.getObject());
+            dependantClasses.remove(clazz);
+        } else if (providedInstance != null) {
+            partlyInstantiatingObjects.put(clazz, providedInstance);
+            dependantClasses.remove(clazz);
         }
-        prototypeInstanceProviderMap.put(clazz, new InstanceProvider(clazz));
-        return null;
+        if (dependantClasses.isEmpty()) {
+            for (Map.Entry<Class<?>, Object> entry : partlyInstantiatingObjects.entrySet()) {
+                context.registerComponent(entry.getKey(), classProcessor.wiringUnwiredFields(entry.getValue(), partlyInstantiatingObjects));
+            }
+            partlyInstantiatingObjects.clear();
+        }
+        return optionalObject;
     }
 
     public void registerComponent(Class<?> clazz) {
@@ -110,9 +116,6 @@ public class DIContextHelper {
             if (clazz.getDeclaredAnnotation(Component.class) != null) {
                 registerComponent(clazz);
             }
-        }
-        for (Map.Entry<Class<?>, Object> entry : partlyInstantiatingObjects.entrySet()) {
-            context.registerComponent(entry.getKey(), classProcessor.wiringUnwiredFields(entry.getValue(), partlyInstantiatingObjects));
         }
     }
 

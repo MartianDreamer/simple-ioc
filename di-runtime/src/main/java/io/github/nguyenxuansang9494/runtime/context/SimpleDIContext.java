@@ -32,7 +32,6 @@ public final class SimpleDIContext implements DIContext {
                     return a;
                 })
                 .orElse(Collections.emptyList());
-
     }
 
     @Override
