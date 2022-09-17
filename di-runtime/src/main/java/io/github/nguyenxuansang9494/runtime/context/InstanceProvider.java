@@ -72,15 +72,20 @@ public class InstanceProvider {
         this.runnerAnnotatedMethod = new Method[]{};
     }
 
-    public Object instantiate() {
+    public OptionalObject provide(Set<Class<?>> dependantClasses) {
+        if (dependantClasses.contains(this.clazz)) {
+            return new OptionalObject(null, false);
+        }
+        dependantClasses.add(this.clazz);
         try {
+            boolean isComplete = true;
             if (instantiateMethod != null && configObject != null) {
-                return instantiateMethod.invoke(configObject);
+                return new OptionalObject(instantiateMethod.invoke(configObject), true);
             }
             Constructor<?> constructor = clazz.getConstructor();
             Object instance = constructor.newInstance();
             for (Field field : injectAnnotatedField) {
-                setField(instance, field);
+                isComplete &= setField(instance, field, dependantClasses);
             }
             for (Method method : componentAnnotatedMethod) {
                 Component component = method.getDeclaredAnnotation(Component.class);
@@ -93,7 +98,7 @@ public class InstanceProvider {
             for (Method method : runnerAnnotatedMethod) {
                 contextHelper.registerExecutor(method, instance);
             }
-            return instance;
+            return new OptionalObject(instance, isComplete);
         } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException
                  | IllegalArgumentException | InvocationTargetException e) {
             LOGGER.error("InstanceBuilder.instantiate - {}", e.getMessage());
@@ -101,16 +106,7 @@ public class InstanceProvider {
         }
     }
 
-    public OptionalObject provide() {
-        // Solve crossly depend component problem;
-        return null;
-    };
-    public OptionalObject provide(Set<Class<?>> dependantClasses) {
-        // Solve crossly depend component problem;
-        return null;
-    }
-
-    private void setField(Object instance, Field field) throws IllegalArgumentException, IllegalAccessException {
+    private boolean setField(Object instance, Field field, Set<Class<?>> dependantClasses) throws IllegalArgumentException, IllegalAccessException {
         field.setAccessible(true);
         Class<?> injectQualifiedClass = field.getDeclaredAnnotation(Inject.class).qualified();
         List<Class<?>> childClasses = contextHelper.getChildClasses(field.getType());
@@ -118,18 +114,16 @@ public class InstanceProvider {
             if (!field.getType().isAssignableFrom(injectQualifiedClass)) {
                 throw new FailedToRegisterDependencyException("InstanceProvider.setField - invalid qualified type.");
             }
-            setField(instance, field, injectQualifiedClass);
-            return;
+            return setField(instance, field, injectQualifiedClass, dependantClasses);
         }
         if (childClasses.size() != 1) {
             throw new FailedToRegisterDependencyException("InstanceProvider.setField - can not decide valid component");
         }
         injectQualifiedClass = childClasses.get(0);
-        setField(instance, field, injectQualifiedClass);
-
+        return setField(instance, field, injectQualifiedClass, dependantClasses);
     }
 
-    private void setField(Object instance, Field field, Class<?> injectQualifiedClass) throws IllegalAccessException {
+    private boolean setField(Object instance, Field field, Class<?> injectQualifiedClass, Set<Class<?>> dependantClasses) throws IllegalAccessException {
         Component component;
         ComponentScope scope;
         component = injectQualifiedClass.getDeclaredAnnotation(Component.class);
@@ -139,30 +133,38 @@ public class InstanceProvider {
             scope = contextHelper.getPrototypeInstanceProvider(injectQualifiedClass) == null ? ComponentScope.SINGLETON : ComponentScope.PROTOTYPE;
         }
         if (ComponentScope.SINGLETON.equals(scope)) {
-            setFieldSingleton(instance, field, injectQualifiedClass);
+            return setFieldSingleton(instance, field, injectQualifiedClass, dependantClasses);
         } else {
-            setFieldPrototype(instance, field, injectQualifiedClass);
+            return setFieldPrototype(instance, field, injectQualifiedClass, dependantClasses);
         }
     }
 
-    private void setFieldPrototype(Object instance, Field field, Class<?> clazz) throws IllegalAccessException {
+    private boolean setFieldPrototype(Object instance, Field field, Class<?> clazz, Set<Class<?>> dependentClasses) throws IllegalAccessException {
         field.setAccessible(true);
-        Object registeredComponent = contextHelper.registerComponent(clazz);
-        while (registeredComponent == null) {
-            registeredComponent = contextHelper.registerComponent(clazz);
+        OptionalObject optionalObject = contextHelper.registerComponent(clazz, dependentClasses);
+        while (optionalObject == null) {
+            optionalObject = contextHelper.registerComponent(clazz, dependentClasses);
         }
-        field.set(instance, registeredComponent);
+        if (optionalObject.isComplete()) {
+            field.set(instance, optionalObject.getObject());
+        }
+        return optionalObject.isComplete();
     }
 
-    private void setFieldSingleton(Object instance, Field field, Class<?> clazz) throws IllegalAccessException {
+    private boolean setFieldSingleton(Object instance, Field field, Class<?> clazz, Set<Class<?>> dependentClasses) throws IllegalAccessException {
         field.setAccessible(true);
         List<Object> objects = context.getComponents(clazz);
         if (objects.size() > 1) {
             throw new FailedToRegisterDependencyException("InstanceBuilder.setField - more or less than one valid bean");
         } else if (objects.isEmpty()) {
-            field.set(instance, contextHelper.registerComponent(clazz));
+            OptionalObject optionalObject = contextHelper.registerComponent(clazz, dependentClasses);
+            if (optionalObject.isComplete()){
+                field.set(instance, optionalObject.getObject());
+            }
+            return optionalObject.isComplete();
         } else {
             field.set(instance, objects.get(0));
+            return true;
         }
     }
 }
