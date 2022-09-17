@@ -10,13 +10,20 @@ public final class SimpleDIApplication {
         super();
     }
 
-    public static void run(Class<?> clazz) {
+    private static String[] args;
+
+    public static void run(Class<?> clazz, String[] args) {
         try {
             clazz.getDeclaredMethod("main", String[].class);
+            SimpleDIApplication.args = args;
             setUpApplication(clazz);
         } catch (NoSuchMethodException | SecurityException e) {
             throw new UnsupportedClassException(e);
         }
+    }
+
+    public static String[] getArgs() {
+        return args;
     }
 
     private static void setUpApplication(Class<?> clazz) {
