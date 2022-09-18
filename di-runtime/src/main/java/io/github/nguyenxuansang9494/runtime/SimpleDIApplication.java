@@ -1,5 +1,6 @@
 package io.github.nguyenxuansang9494.runtime;
 
+import io.github.nguyenxuansang9494.annotations.ComponentScan;
 import io.github.nguyenxuansang9494.runtime.context.DIContext;
 import io.github.nguyenxuansang9494.runtime.context.DIContextHelper;
 import io.github.nguyenxuansang9494.runtime.context.SimpleDIContext;
@@ -29,7 +30,12 @@ public final class SimpleDIApplication {
     private static void setUpApplication(Class<?> clazz) {
         DIContext context = SimpleDIContext.getContext();
         DIContextHelper contextHelper = DIContextHelper.getInstance();
-        contextHelper.setUpContext(clazz);
+        ComponentScan componentScan = clazz.getDeclaredAnnotation(ComponentScan.class);
+        String[] scannedComponent = new String[] { clazz.getPackage().getName() };
+        if (componentScan!=null) {
+            scannedComponent = componentScan.packages();
+        }
+        contextHelper.setUpContext(clazz, scannedComponent);
         context.executeRunners();
     }
 }

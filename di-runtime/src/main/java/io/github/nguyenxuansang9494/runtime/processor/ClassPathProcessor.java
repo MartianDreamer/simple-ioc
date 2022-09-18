@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -25,27 +24,34 @@ public class ClassPathProcessor {
         return instance;
     }
 
-    private List<File> findAllFiles(File classPath) {
-        List<File> result = new LinkedList<>();
-        File[] files = classPath.listFiles();
+    private List<String> findAllFiles(File classPath, File directory, String[] packages) {
+        List<String> classes = new LinkedList<>();
+        File[] files = directory.listFiles();
         if (files == null) {
             throw new InvalidClassPathException("ClassPathProcessor.findAllFiles - classpath is not a directory");
         }
-        for (File e : files) {
-            if (e.isFile() && e.getName().endsWith(CLASS_EXTENSION))
-                result.add(e);
-            else if (e.isDirectory())
-                result.addAll(findAllFiles(e));
+        for (File file : files) {
+            if (file.isFile() && file.getName().endsWith(CLASS_EXTENSION)) {
+                String className = getClassName(classPath.getPath(), file.getPath());
+                for (String packageName : packages) {
+                    if (className.contains(packageName)) {
+                        classes.add(className);
+                        break;
+                    }
+                }
+            }
+            else if (file.isDirectory()) {
+                classes.addAll(findAllFiles(classPath, file, packages));
+            }
         }
-        return result;
+        return classes;
     }
 
-    private List<String> findAllClassesName(File classPath) {
+    private List<String> findAllClassesName(File classPath, String[] packages) {
         if (classPath.isDirectory()) {
-            List<File> files = findAllFiles(classPath);
-            return files.stream().map(f -> getClassName(classPath.getPath(), f.getPath())).collect(Collectors.toList());
+            return findAllFiles(classPath, classPath, packages);
         }
-        return findAllClassNameInJar(classPath);
+        return findAllClassNameInJar(classPath, packages);
     }
 
     private String getClassName(String classPath, String filePath) {
@@ -54,19 +60,14 @@ public class ClassPathProcessor {
         return className;
     }
 
-    public List<Class<?>> scanAllClasses(Class<?> clazz) {
+    public List<Class<?>> scanAllClasses(Class<?> clazz, String[] packages) {
         final String WHITESPACE = "%20";
         String classPathStr = clazz.getProtectionDomain().getCodeSource().getLocation().getPath();
         classPathStr = classPathStr.replace(WHITESPACE, " ");
         File classPath = new File(classPathStr);
-        List<String> classNames = findAllClassesName(classPath);
+        List<String> classNames = findAllClassesName(classPath, packages);
         List<Class<?>> classes = new LinkedList<>();
-        String mainClassFullName = clazz.getCanonicalName();
-        String basePackage = mainClassFullName.substring(0, mainClassFullName.lastIndexOf("."));
         for (String className: classNames) {
-            if (!className.contains(basePackage)) {
-                continue;
-            }
             try {
                 classes.add(Class.forName(className));
             } catch (ClassNotFoundException e) {
@@ -76,14 +77,19 @@ public class ClassPathProcessor {
         return classes;
     }
 
-    public List<String> findAllClassNameInJar(File classPath) {
+    public List<String> findAllClassNameInJar(File classPath, String[] packages) {
         List<String> classes = new LinkedList<>();
         try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(classPath.toPath()))) {
             for (ZipEntry zipEntry = zipInputStream.getNextEntry(); zipEntry != null; zipEntry = zipInputStream.getNextEntry()) {
                 if (zipEntry.getName().endsWith(CLASS_EXTENSION) && !zipEntry.isDirectory()) {
                     String className = zipEntry.getName().replace(File.separatorChar, '.');
                     className = className.substring(0, className.length() - CLASS_EXTENSION.length());
-                    classes.add(className);
+                    for (String packageName : packages) {
+                        if (className.contains(packageName)) {
+                            classes.add(className);
+                            break;
+                        }
+                    }
                 }
             }
             return classes;

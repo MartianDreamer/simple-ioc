@@ -4,7 +4,6 @@ import io.github.nguyenxuansang9494.annotations.Component;
 import io.github.nguyenxuansang9494.annotations.ComponentScope;
 import io.github.nguyenxuansang9494.annotations.Configuration;
 import io.github.nguyenxuansang9494.runtime.context.model.OptionalObject;
-import io.github.nguyenxuansang9494.runtime.exception.FailedToRegisterDependencyException;
 import io.github.nguyenxuansang9494.runtime.exception.UnsupportedClassException;
 import io.github.nguyenxuansang9494.runtime.processor.ClassPathProcessor;
 import io.github.nguyenxuansang9494.runtime.processor.ClassProcessor;
@@ -90,8 +89,8 @@ public class DIContextHelper {
     }
 
 
-    public void setUpContext(Class<?> mainClass) {
-        List<Class<?>> allClasses = classPathProcessor.scanAllClasses(mainClass);
+    public void setUpContext(Class<?> mainClass, String[] packages) {
+        List<Class<?>> allClasses = classPathProcessor.scanAllClasses(mainClass, packages);
         for (Class<?> clazz : allClasses) {
             Component component = clazz.getDeclaredAnnotation(Component.class);
             Configuration configuration = clazz.getDeclaredAnnotation(Configuration.class);
