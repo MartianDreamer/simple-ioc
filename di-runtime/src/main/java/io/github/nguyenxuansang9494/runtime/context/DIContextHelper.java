@@ -7,11 +7,13 @@ import io.github.nguyenxuansang9494.runtime.context.model.OptionalObject;
 import io.github.nguyenxuansang9494.runtime.exception.UnsupportedClassException;
 import io.github.nguyenxuansang9494.runtime.processor.ClassPathProcessor;
 import io.github.nguyenxuansang9494.runtime.processor.ClassProcessor;
+import io.github.nguyenxuansang9494.runtime.processor.PostConstructProcessor;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,6 +72,7 @@ public class DIContextHelper {
         providedInstance = optionalObject.getObject();
         if (optionalObject.isComplete()) {
             context.registerComponent(clazz, optionalObject.getObject());
+            PostConstructProcessor.invoke(optionalObject.getObject());
             dependantClasses.remove(clazz);
         } else if (providedInstance != null) {
             partlyInstantiatingObjects.put(clazz, providedInstance);
@@ -100,7 +103,7 @@ public class DIContextHelper {
                 registeredClasses.put(clazz, configuration);
             }
         }
-        final Set<Method> componentMethodSet = new HashSet<>();
+        final List<Method> componentMethodSet = new LinkedList<>();
         for (Class<?> clazz : registeredClasses.keySet()) {
             if (clazz.getDeclaredAnnotation(Configuration.class) != null) {
                 List<Method> componentMethods = classProcessor.findDeclaredAnnotatedMethods(clazz, Component.class);
